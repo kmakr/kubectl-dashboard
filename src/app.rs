@@ -77,6 +77,9 @@ pub struct KubeDashboard {
 
     // Notifications
     notifications: Vec<Notification>,
+
+    // Theme
+    dark_mode: bool,
 }
 
 struct Notification {
@@ -104,7 +107,69 @@ enum AppMessage {
 }
 
 impl KubeDashboard {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // Configure custom font (Berkeley Mono)
+        let mut fonts = egui::FontDefinitions::default();
+
+        // Try to load Berkeley Mono from common macOS font locations
+        let home = std::env::var("HOME").unwrap_or_default();
+        let font_paths: Vec<std::path::PathBuf> = vec![
+            std::path::PathBuf::from("/Library/Fonts/BerkeleyMono-Regular.otf"),
+            std::path::PathBuf::from("/Library/Fonts/BerkeleyMono-Regular.ttf"),
+            std::path::PathBuf::from(&home).join("Library/Fonts/BerkeleyMono-Regular.otf"),
+            std::path::PathBuf::from(&home).join("Library/Fonts/BerkeleyMono-Regular.ttf"),
+            std::path::PathBuf::from(&home).join("Library/Fonts/Berkeley Mono/BerkeleyMono-Regular.otf"),
+            std::path::PathBuf::from(&home).join("Library/Fonts/Berkeley Mono/BerkeleyMono-Regular.ttf"),
+        ];
+
+        let mut font_loaded = false;
+        for font_path in &font_paths {
+            if font_path.exists() {
+                if let Ok(font_data) = std::fs::read(font_path) {
+                    fonts.font_data.insert(
+                        "berkeley_mono".to_owned(),
+                        egui::FontData::from_owned(font_data).into(),
+                    );
+
+                    // Set Berkeley Mono as the primary font for all text styles
+                    fonts.families
+                        .entry(egui::FontFamily::Proportional)
+                        .or_default()
+                        .insert(0, "berkeley_mono".to_owned());
+
+                    fonts.families
+                        .entry(egui::FontFamily::Monospace)
+                        .or_default()
+                        .insert(0, "berkeley_mono".to_owned());
+
+                    font_loaded = true;
+                    tracing::info!("Loaded Berkeley Mono font from {:?}", font_path);
+                    break;
+                }
+            }
+        }
+
+        // Also try to load bold variant
+        let bold_path = std::path::PathBuf::from(&home).join("Library/Fonts/BerkeleyMono-Bold.otf");
+        if bold_path.exists() {
+            if let Ok(bold_data) = std::fs::read(&bold_path) {
+                fonts.font_data.insert(
+                    "berkeley_mono_bold".to_owned(),
+                    egui::FontData::from_owned(bold_data).into(),
+                );
+                tracing::info!("Loaded Berkeley Mono Bold font");
+            }
+        }
+
+        if !font_loaded {
+            tracing::warn!("Berkeley Mono font not found, using default font");
+        }
+
+        cc.egui_ctx.set_fonts(fonts);
+
+        // Set dark mode by default
+        cc.egui_ctx.set_visuals(egui::Visuals::dark());
+
         let runtime = Arc::new(Runtime::new().expect("Failed to create Tokio runtime"));
         let (message_tx, message_rx) = channel();
 
@@ -147,6 +212,7 @@ impl KubeDashboard {
             message_tx,
             message_rx,
             notifications: vec![],
+            dark_mode: true,
         };
 
         app.initialize();
@@ -837,6 +903,15 @@ impl KubeDashboard {
                 if ui.button("Refresh").clicked() {
                     self.refresh_current_view();
                 }
+                ui.add_space(8.0);
+
+                // Theme toggle
+                ui.horizontal(|ui| {
+                    ui.label(if self.dark_mode { "Dark" } else { "Light" });
+                    if ui.add(egui::Button::new(if self.dark_mode { "☀" } else { "🌙" }).min_size(egui::vec2(28.0, 28.0))).clicked() {
+                        self.dark_mode = !self.dark_mode;
+                    }
+                });
             });
         });
     }
@@ -874,6 +949,13 @@ impl KubeDashboard {
 impl eframe::App for KubeDashboard {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.process_messages();
+
+        // Apply theme
+        ctx.set_visuals(if self.dark_mode {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        });
 
         // Request continuous repaints for animations and updates
         ctx.request_repaint_after(std::time::Duration::from_millis(100));

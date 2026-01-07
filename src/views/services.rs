@@ -119,8 +119,7 @@ impl ServicesView {
                         row.col(|ui| { ui.label(&service.external_ip); });
                         row.col(|ui| {
                             let ports_str = service.ports.join(", ");
-                            ui.label(truncate_string(&ports_str, 30))
-                                .on_hover_text(&ports_str);
+                            ui.label(&ports_str);
                         });
                         row.col(|ui| { ui.label(&service.age); });
                     });
@@ -212,11 +211,11 @@ impl ServicesView {
                         row.col(|ui| { ui.label(&ingress.namespace); });
                         row.col(|ui| {
                             let hosts = ingress.hosts.join(", ");
-                            ui.label(truncate_string(&hosts, 40)).on_hover_text(&hosts);
+                            ui.label(&hosts);
                         });
                         row.col(|ui| {
                             let paths = ingress.paths.join(", ");
-                            ui.label(truncate_string(&paths, 30)).on_hover_text(&paths);
+                            ui.label(&paths);
                         });
                         row.col(|ui| { ui.label(&ingress.age); });
                     });

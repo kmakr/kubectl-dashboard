@@ -109,7 +109,7 @@ impl PodsView {
                 for pod in &filtered {
                     body.row(30.0, |mut row| {
                         row.col(|ui| {
-                            if ui.link(truncate_string(&pod.name, 40)).on_hover_text(&pod.name).clicked() {
+                            if ui.link(&pod.name).clicked() {
                                 self.selected_pod = Some((*pod).clone());
                             }
                         });
@@ -128,7 +128,7 @@ impl PodsView {
                             ui.label(RichText::new(pod.restarts.to_string()).color(color));
                         });
                         row.col(|ui| { ui.label(&pod.age); });
-                        row.col(|ui| { ui.label(truncate_string(&pod.node, 20)); });
+                        row.col(|ui| { ui.label(&pod.node); });
                         row.col(|ui| {
                             ui.horizontal(|ui| {
                                 if ui.small_button("Logs").clicked() {

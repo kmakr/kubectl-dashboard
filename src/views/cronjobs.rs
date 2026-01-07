@@ -103,7 +103,7 @@ impl CronJobsView {
                 for cj in &filtered {
                     body.row(30.0, |mut row| {
                         row.col(|ui| {
-                            if ui.link(truncate_string(&cj.name, 40)).on_hover_text(&cj.name).clicked() {
+                            if ui.link(&cj.name).clicked() {
                                 self.selected_cronjob = Some((*cj).clone());
                             }
                         });

@@ -95,7 +95,7 @@ impl JobsView {
                 for job in &filtered {
                     body.row(30.0, |mut row| {
                         row.col(|ui| {
-                            if ui.link(truncate_string(&job.name, 45)).on_hover_text(&job.name).clicked() {
+                            if ui.link(&job.name).clicked() {
                                 self.selected_job = Some((*job).clone());
                             }
                         });
